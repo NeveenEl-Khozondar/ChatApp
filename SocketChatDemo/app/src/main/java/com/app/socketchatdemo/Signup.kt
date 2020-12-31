@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.github.nkzawa.emitter.Emitter
 import com.github.nkzawa.socketio.client.Socket
 import kotlinx.android.synthetic.main.activity_signup.*
 import org.json.JSONObject
@@ -14,38 +15,38 @@ import java.util.*
 class Signup: AppCompatActivity() {
     lateinit var idApp: String
     private var mSocket: Socket? = null
+    private lateinit var create: SocketCreate
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_signup)
 
-        log.setOnClickListener {
-            var i = Intent(this, Login::class.java)
-            startActivity(i)
+        create= application as SocketCreate
+        mSocket = create.getSocket();
 
-        }
-        mSocket!!.on("SignUp"){args ->
+        mSocket!!.on(Socket.EVENT_CONNECT_ERROR) {
             runOnUiThread {
-                if(args[0].toString() == idApp){
-                    Log.e("SignUp", "${args[0]}")
-                }
+                Log.e("EVENT_CONNECT_ERROR", "EVENT_CONNECT_ERROR: ")
             }
+        };
+        mSocket!!.on(Socket.EVENT_CONNECT_TIMEOUT, Emitter.Listener {
+            runOnUiThread {
+                Log.e("EVENT_CONNECT_TIMEOUT", "EVENT_CONNECT_TIMEOUT: ")
 
-        }
-        sup_btn.setOnClickListener {
-            var username=txtName.text.toString()
-            var pass=txtPassword.text.toString()
-            var email = email.text.toString()
+            }
+        })
+        mSocket!!.on(
+            Socket.EVENT_CONNECT
+        ) { Log.e("onConnect", "Socket Connected!") };
+        mSocket!!.on(Socket.EVENT_DISCONNECT, Emitter.Listener {
+            runOnUiThread {
+                Log.e("onDisconnect", "Socket onDisconnect!")
 
-            val jsonObject = JSONObject()
-            jsonObject.put("id", UUID.randomUUID().toString())
-            jsonObject.put("username", username)
-            jsonObject.put("pass1", pass)
-            jsonObject.put("email", email)
-            mSocket!!.emit("SignUp",idApp, jsonObject)
+            }
+        })
+        mSocket!!.connect()
 
-            var i = Intent(this, Login::class.java)
-            startActivity(i)
-        }
+
 
     }
 }

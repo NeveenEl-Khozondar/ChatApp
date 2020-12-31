@@ -7,27 +7,30 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.github.nkzawa.socketio.client.Socket
 import kotlinx.android.synthetic.main.activity_login.*
-import kotlinx.android.synthetic.main.activity_login.txtName
-import kotlinx.android.synthetic.main.activity_signup.*
 import org.json.JSONObject
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.*
 
 class Login : AppCompatActivity(){
-    companion object{
-        lateinit var userModel: UserModel
-    }
-     lateinit var idApp: String
+
+    lateinit var idApp: String
     private var mSocket: Socket? = null
+    private lateinit var create: SocketCreate
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
+        create= application as SocketCreate
+        mSocket=create.getSocket()
 
         register.setOnClickListener{
-            var i = Intent(this, Signup::class.java)
+            var i = Intent(this, MainActivity::class.java)
             startActivity(i)
         }
+
+        idApp=UUID.randomUUID().toString()
+
         mSocket!!.on("Login"){ args ->
             runOnUiThread {
                 if(args[0].toString()== idApp)
@@ -43,18 +46,20 @@ class Login : AppCompatActivity(){
 
         }
         sin_btn.setOnClickListener {
-            var username=txtName.text.toString()
-            var pass=txtPassword.text.toString()
+            val username=txtName.text.toString()
+            val pass=password.text.toString()
 
-            var jsonObject = JSONObject()
-
+            val jsonObject = JSONObject()
             jsonObject.put("username", username)
             jsonObject.put("pass", pass)
-
-            mSocket!!.emit("Login",idApp, true, jsonObject)
+            jsonObject.put("isOnline", false)
+            mSocket!!.emit("Login",idApp,idApp, jsonObject)
 
         }
 
 
+    }
+    companion object{
+        lateinit var userModel: UserModel
     }
 }
